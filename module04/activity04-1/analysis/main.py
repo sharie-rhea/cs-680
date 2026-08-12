@@ -1,21 +1,24 @@
 import collections
+import csv
 import os
 import random
 import timeit
 
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
 from avl_tree import AVLTree
-from matplotlib.container import BarContainer
 
 
 def load_data(file_path) -> list:
     print(f"Loading file {file_path}...")
-    # keep_default_na=False handles blank strings
-    df = pd.read_csv(file_path, sep="|", keep_default_na=False)
-    # just return a list of the data, no need to keep sequence num
-    return list(df["data"])
+    try:
+        with open(file_path, newline="") as file:
+            reader = csv.DictReader(file, delimiter="|")
+            # just return a list of the data, no need to keep sequence num
+            data = []
+            for row in reader:
+                data.append(row["data"])
+            return data
+    except Exception as e:
+        raise Exception(f"Error: unable to load file {file_path}: {e}")
 
 
 def search_and_display(tree: AVLTree, target):
@@ -28,7 +31,7 @@ def search_and_display(tree: AVLTree, target):
     print(f"\t{target} found! Count: {node.count} Height: {node.height}")
 
 
-def time_trials(filename, avl_tree, items, duplicates):
+def time_trials(filename, avl_tree, items, duplicates) -> list[dict]:
     results = []
     trials = 10
     n = len(items)
@@ -98,7 +101,7 @@ def time_trials(filename, avl_tree, items, duplicates):
     return results
 
 
-def run_analysis() -> pd.DataFrame:
+def run_analysis() -> list[dict]:
     results = []
     data_dir = "data"
     combined_data = []
@@ -129,13 +132,82 @@ def run_analysis() -> pd.DataFrame:
     duplicates = [key for key, value in counter.items() if value > 1]
     results += time_trials("combined data", avl_tree, combined_data, duplicates)
 
-    return pd.DataFrame(results)
+    return results
 
 
 def main():
     # NOTE: uncomment to re-run analysis
-    # df_results = run_analysis()
-    # df_results.to_csv("analysis_results.csv")
+    # results: list[dict] = run_analysis()
+    # fieldnames = results[0].keys()
+    # with open("analysis_results2.csv", "w") as file:
+    #     writer = csv.DictWriter(file, fieldnames)
+    #     writer.writeheader()
+    #     for row in results:
+    #         writer.writerow(row)
+
+    data = []
+    try:
+        with open("analysis_results2.csv", newline="") as file:
+            reader = csv.DictReader(file, delimiter=",")
+            for row in reader:
+                data.append(row)
+    except Exception as e:
+        raise Exception(f"Error: unable to load file analysis_results2.csv: {e}")
+
+    # convert times to microseconds (and to a float not string)
+    for row in data:
+        row["AvgTime_µs"] = float(row["AvgTime"]) * 1_000_000
+
+    # calculate time by dataset size and category
+    # I know this is really ugly... standard library only, no pandas
+
+    # note that size is parsed as a string, no real need to convert though
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "1000" and row["Category"] == "random"]
+    avg_1000_random = sum(times) / len(times)
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "1000" and row["Category"] == "duplicate"]
+    avg_1000_duplicate = sum(times) / len(times)
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "1000" and row["Category"] == "not present"]
+    avg_1000_not_present = sum(times) / len(times)
+
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "100000" and row["Category"] == "random"]
+    avg_100000_random = sum(times) / len(times)
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "100000" and row["Category"] == "duplicate"]
+    avg_100000_duplicate = sum(times) / len(times)
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "100000" and row["Category"] == "not present"]
+    avg_100000_not_present = sum(times) / len(times)
+
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "401000" and row["Category"] == "random"]
+    avg_40100_random = sum(times) / len(times)
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "401000" and row["Category"] == "duplicate"]
+    avg_40100_duplicate = sum(times) / len(times)
+    times = [row["AvgTime_µs"] for row in data if row["Size"] == "401000" and row["Category"] == "not present"]
+    avg_40100_not_present = sum(times) / len(times)
+
+    # display results
+    print()
+    print()
+    print()
+    print("--- RESULTS ---")
+    print("Average Time for 1000 elements:")
+    print(f"\tRandom:      {avg_1000_random:.4}µs")
+    print(f"\tDuplicate:   {avg_1000_duplicate:.4}µs")
+    print(f"\tNot present: {avg_1000_not_present:.4}µs")
+    print()
+    print("Average Time for 100,000 elements:")
+    print(f"\tRandom:      {avg_100000_random:.4}µs")
+    print(f"\tDuplicate:   {avg_100000_duplicate:.4}µs")
+    print(f"\tNot present: {avg_100000_not_present:.4}µs")
+    print()
+    print("Average Time for 401,000 elements:")
+    print(f"\tRandom:      {avg_40100_random:.4}µs")
+    print(f"\tDuplicate:   {avg_40100_duplicate:.4}µs")
+    print(f"\tNot present: {avg_40100_not_present:.4}µs")
+
+    """
+    If you wish to create plots for the measured results, read the csv file using pandas
+    to create a dataframe, then import matplotlib, pandas, and seaborn. Uncomment this
+    section to enable plotting!
+
 
     # plotting for analysis!
     df_results = pd.read_csv("analysis_results.csv")
@@ -163,6 +235,7 @@ def main():
     plt.savefig(f"time_by_size.png", dpi=300, bbox_inches="tight")
 
     plt.show()
+    """
 
 
 if __name__ == "__main__":
