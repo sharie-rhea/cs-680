@@ -1,0 +1,8 @@
+sequence|TLEN|data-a|data-b|validation
+0|22|ventricoseness|gowkedly|eb1d27b5e6aea0792bca8e16f5461b83a43a2ca730ee3667f7d13049389fbba3
+string|string|123|456|qwertyuiopasdfghjklzxcvbnm|
+1|18|thaumaturgist|Olson|
+this is just plain text to see how it performs
+the first line is valid
+the second one has the wrong types
+the third is missing a field
